@@ -1,112 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Library Seat Monitoring</title>
+  <title>Smart Library Seat Map</title>
+  <style>
+    body { 
+      font-family: Arial; 
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    h1 { text-align: center; }
+    
+    .seat-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 120px);
+      gap: 15px;
+      justify-content: center;
+      margin-top: 30px;
+    }
 
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #111;
-            color: #fff;
-            text-align: center;
-            padding: 20px;
-        }
+    .seat {
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: bold;
+      color: white;
+      cursor: pointer;
+    }
 
-        h1 {
-            margin-bottom: 10px;
-        }
-
-        .stats {
-            margin-bottom: 20px;
-            font-size: 20px;
-        }
-
-        .seat-container {
-            display: grid;
-            grid-template-columns: repeat(4, 80px);
-            grid-gap: 15px;
-            justify-content: center;
-        }
-
-        .seat {
-            width: 80px;
-            height: 80px;
-            background: #444;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-weight: bold;
-            font-size: 18px;
-            cursor: pointer;
-            border: 2px solid #666;
-        }
-
-        .legend {
-            margin-top: 20px;
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-        }
-
-        .legend span {
-            display: inline-block;
-            padding: 8px 15px;
-            border-radius: 6px;
-            font-size: 14px;
-            text-transform: uppercase;
-        }
-
-        .free {
-            background-color: #4CAF50;
-        }
-
-        .occupied {
-            background-color: #F44336;
-        }
-
-        .reserved {
-            background-color: #FFC107;
-            color: #000;
-        }
-    </style>
+    .Free { background: #28a745; }        /* green */
+    .Occupied { background: #dc3545; }    /* red */
+    .Reserved { background: #ffc107; }    /* yellow */
+  </style>
 </head>
-
 <body>
 
-    <h1>Smart Library Seat Status</h1>
+  <h1>Smart Library Seat Map</h1>
 
-    <!-- 📊 Stats Section -->
-    <div class="stats">
-        Free: <span id="freeCount">0</span> |
-        Occupied: <span id="occupiedCount">0</span> |
-        Reserved: <span id="reservedCount">0</span>
-    </div>
+  <div class="seat-grid">
+    <div class="seat Free" id="A1">A1</div>
+    <div class="seat Free" id="A2">A2</div>
+    <div class="seat Free" id="A3">A3</div>
+    <div class="seat Free" id="A4">A4</div>
+    <div class="seat Free" id="B1">B1</div>
+    <div class="seat Free" id="B2">B2</div>
+    <div class="seat Free" id="B3">B3</div>
+    <div class="seat Free" id="B4">B4</div>
+  </div>
 
-    <!-- 📌 Seat Layout -->
-    <div class="seat-container">
-        <div id="A1" class="seat">A1</div>
-        <div id="A2" class="seat">A2</div>
-        <div id="A3" class="seat">A3</div>
-        <div id="A4" class="seat">A4</div>
-
-        <div id="B1" class="seat">B1</div>
-        <div id="B2" class="seat">B2</div>
-        <div id="B3" class="seat">B3</div>
-        <div id="B4" class="seat">B4</div>
-    </div>
-
-    <!-- 🎨 Legend -->
-    <div class="legend">
-        <span class="free">Free</span>
-        <span class="occupied">Occupied</span>
-        <span class="reserved">Reserved</span>
-    </div>
-
-    <!-- 🚀 Connect JavaScript -->
-    <script src="script.js"></script>
-
+  <script src="app.js"></script>
 </body>
 </html>
