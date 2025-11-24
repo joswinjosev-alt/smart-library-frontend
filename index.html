@@ -1,0 +1,50 @@
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Library Seat Tracker</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header>
+  <h1>Smart Library System</h1>
+  <nav>
+      <button onclick="showPage('seat')">Seat Map</button>
+      <button onclick="showPage('books')">Book Locator</button>
+  </nav>
+</header>
+
+<!-- Seat Map -->
+<section id="seat" class="page visible">
+  <h2>Live Seat Map</h2>
+  <div class="stats">
+    <div>Total Seats: <span id="total"></span></div>
+    <div>Free: <span id="free"></span></div>
+    <div>Occupied: <span id="occ"></span></div>
+    <div>Reserved: <span id="res"></span></div>
+  </div>
+
+  <h3>Floor 1</h3>
+  <div class="seat-grid" id="floor1"></div>
+
+  <h3>Floor 2</h3>
+  <div class="seat-grid" id="floor2"></div>
+</section>
+
+<!-- Book Locator -->
+<section id="books" class="page">
+  <h2>Find Book Location</h2>
+  <input type="text" id="searchBook" placeholder="Search by title or author..." oninput="searchBooks()">
+  <table>
+    <thead>
+      <tr><th>Title</th><th>Author</th><th>Floor</th><th>Section</th><th>Shelf</th></tr>
+    </thead>
+    <tbody id="bookTable"></tbody>
+  </table>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
