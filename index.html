@@ -1,205 +1,53 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Smart Library — Single Page Demo</title>
-  <style>
-    :root{
-      --accent:#ff7a00;
-      --bg:#ffffff;
-      --muted:#f6f6f6;
-      --text:#222;
-      --seat-size:64px;
-      --reserved:#ffddc8;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+// ===== BACKEND URL =====
+const API_URL = "https://smart-library-backend-1.onrender.com";
+
+// ===== Update seat display =====
+function updateSeatColors(seats) {
+    Object.keys(seats).forEach(seatId => {
+        const el = document.getElementById(seatId);
+        if (!el) return;
+
+        const status = seats[seatId].toLowerCase();  // <--- IMPORTANT
+
+        if (status === "free") {
+            el.style.background = "white";
+            el.style.color = "black";
+        }
+        else if (status === "occupied") {
+            el.style.background = "#F44336";
+            el.style.color = "white";
+        }
+        else if (status === "reserved") {
+            el.style.background = "#FFC107";
+            el.style.color = "black";
+        }
+
+        el.querySelector(".status").textContent = status;
+    });
+}
+
+// ===== Update stats =====
+function updateStats(seats) {
+    const values = Object.values(seats).map(x => x.toLowerCase());
+
+    document.getElementById("freeCnt").textContent = values.filter(s => s === "free").length;
+    document.getElementById("occCnt").textContent = values.filter(s => s === "occupied").length;
+    document.getElementById("resCnt").textContent = values.filter(s => s === "reserved").length;
+}
+
+// ===== Fetch from backend every 1 second =====
+async function fetchSeatData() {
+    try {
+        const res = await fetch(`${API_URL}/seats`);
+        const data = await res.json();
+
+        updateSeatColors(data);
+        updateStats(data);
+
+    } catch (e) {
+        console.log("Backend not reachable");
     }
-    *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,var(--bg),#fff);color:var(--text);min-height:100vh}
-    header{display:flex;align-items:center;gap:16px;padding:18px 24px;border-bottom:1px solid #eee}
-    .logo{display:flex;align-items:center;gap:12px}
-    .logo .mark{width:42px;height:42px;border-radius:10px;background:var(--accent);display:grid;place-items:center;color:white;font-weight:700}
-    h1{font-size:18px;margin:0}
-    nav{margin-left:auto;display:flex;gap:12px}
-    nav button{background:transparent;border:none;color:var(--accent);font-weight:600;cursor:pointer;padding:8px 10px;border-radius:8px}
-    nav button.active{background:var(--accent);color:white}
+}
 
-    .page-wrap{padding:20px;max-width:1200px;margin:18px auto}
-    .page{display:none;opacity:0;transform:translateY(6px);transition:opacity .25s, transform .25s}
-    .page.visible{display:block;opacity:1;transform:translateY(0)}
-
-    .hero{padding:40px 20px;text-align:center}
-    .hero h2{color:var(--accent);font-size:32px;margin:0 0 8px}
-    .hero p{max-width:900px;margin:8px auto;color:#555;line-height:1.6}
-    .btn{display:inline-block;margin-top:18px;padding:10px 18px;background:var(--accent);color:#fff;border-radius:8px;text-decoration:none;cursor:pointer;border:none}
-
-    .container{display:grid;grid-template-columns:300px 1fr;gap:20px;margin-top:12px}
-    .panel{background:var(--muted);padding:14px;border-radius:12px}
-
-    .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-    .legend .item{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;background:white}
-
-    .chip{width:14px;height:14px;border-radius:4px}
-    .chip.free{background:transparent;border:2px solid #ddd}
-    .chip.occupied{background:var(--accent)}
-    .chip.reserved{background:#ffb380}
-
-    .map-wrap{padding:10px}
-    .map{display:grid;grid-template-columns:repeat(8,1fr);gap:14px;align-items:center;justify-items:center}
-    .floor-label{grid-column:1/-1;padding:8px 12px;border-radius:8px;background:white;font-weight:700;margin-top:8px}
-
-    .seat{
-      width:var(--seat-size);height:var(--seat-size);display:flex;align-items:center;justify-content:center;
-      border-radius:12px;border:2px dashed transparent;user-select:none;transition:transform .12s,opacity .12s;
-      position:relative;background:white;box-shadow:0 6px 14px rgba(0,0,0,0.06)
-    }
-    .seat .label{font-weight:700}
-    .seat.free{border-color:#e6e6e6;background:white;color:var(--text)}
-    .seat.occupied{background:var(--accent);color:white}
-    .seat.reserved{background:var(--reserved)}
-    .seat .status{position:absolute;bottom:6px;font-size:11px;opacity:0.9}
-
-    .search{display:flex;gap:10px;margin-bottom:18px}
-    .search input{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
-    .book-list{background:var(--muted);padding:12px;border-radius:10px}
-    table{width:100%;border-collapse:collapse}
-    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
-    th{background:white}
-
-    @media(max-width:900px){
-      .container{grid-template-columns:1fr}
-      .map{grid-template-columns:repeat(4,1fr)}
-      .panel{order:2}
-    }
-  </style>
-</head>
-
-<body>
-  <header>
-    <div class="logo">
-      <div class="mark">SLS</div>
-      <div><h1>Smart Library System</h1></div>
-    </div>
-    <nav>
-      <button id="navHome" class="active">Home</button>
-      <button id="navSeat">Seat Map</button>
-      <button id="navBooks">Book Locations</button>
-    </nav>
-  </header>
-
-  <div class="page-wrap">
-
-    <!-- HOME PAGE -->
-    <section id="home" class="page visible">
-      <div class="hero panel">
-        <h2>Welcome to Smart Library</h2>
-        <p>This demo shows a live seat occupancy map and a book locator system. Seats update live from the backend.</p>
-        <div style="margin-top:14px">
-          <button class="btn" onclick="showPage('seat')">Open Seat Map</button>
-          <button class="btn" onclick="showPage('books')">Open Book Locations</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- SEAT MAP -->
-    <section id="seat" class="page">
-      <div class="container">
-
-        <!-- LEFT PANEL -->
-        <aside>
-          <div class="panel">
-            <h3>Legend & Stats</h3>
-            <div>
-              <strong>Legend</strong>
-              <div class="legend">
-                <div class="item"><div class="chip free"></div><div>Free</div></div>
-                <div class="item"><div class="chip occupied"></div><div>Occupied</div></div>
-                <div class="item"><div class="chip reserved"></div><div>Reserved</div></div>
-              </div>
-            </div>
-
-            <div style="height:12px"></div>
-
-            <div>
-              <strong>Stats</strong>
-              <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:8px">
-                <div style="background:white;padding:12px;border-radius:10px;min-width:110px">
-                  Total seats<div id="totalCnt" style="font-weight:700;font-size:18px">8</div>
-                </div>
-                <div style="background:white;padding:12px;border-radius:10px;min-width:110px">
-                  Free<div id="freeCnt" style="font-weight:700;font-size:18px">-</div>
-                </div>
-                <div style="background:white;padding:12px;border-radius:10px;min-width:110px">
-                  Occupied<div id="occCnt" style="font-weight:700;font-size:18px">-</div>
-                </div>
-                <div style="background:white;padding:12px;border-radius:10px;min-width:110px">
-                  Reserved<div id="resCnt" style="font-weight:700;font-size:18px">-</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <!-- RIGHT PANEL -->
-        <main>
-          <div class="map-wrap panel">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-              <strong>Library Map — Live</strong>
-              <div style="font-size:13px;color:#666">Status updates come from backend.</div>
-            </div>
-
-            <div id="map" class="map"></div>
-          </div>
-        </main>
-      </div>
-    </section>
-
-    <!-- BOOKS -->
-    <section id="books" class="page">
-      <div class="panel" style="max-width:980px;margin:0 auto">
-        <h2 style="color:var(--accent)">Find Book Location</h2>
-
-        <div class="search">
-          <input id="searchBox" placeholder="Search by title or author..." oninput="searchBooks()" />
-          <button onclick="searchBooks()" style="background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer">Search</button>
-        </div>
-
-        <div class="book-list">
-          <table id="bookTable">
-            <thead><tr><th>Title</th><th>Author</th><th>Floor</th><th>Section</th><th>Shelf</th></tr></thead>
-            <tbody></tbody>
-          </table>
-
-          <p id="noRes" style="display:none;color:#777;font-style:italic;margin-top:10px">No books found.</p>
-        </div>
-      </div>
-    </section>
-
-  </div>
-
-  <footer style="text-align:center;padding:18px;color:#666">
-    Demo created for ECE Smart Library project
-  </footer>
-
-  <!-- ========================================================= -->
-  <!--               ALL JAVASCRIPT BELOW (UNCHANGED)            -->
-  <!-- ========================================================= -->
-
-  <script>
-    const API_URL = "https://smart-library-backend-83ly.onrender.com";
-
-    /* (All your existing JS code stays intact here)
-       I am not rewriting it because YOU ALREADY HAVE a full working script.
-       The only change needed was removing the invalid `src="script.js"` line.
-    */
-
-    // Entire JS code from your file remains EXACTLY AS IT WAS
-    // [...]
-    // (I removed nothing, only fixed the broken end of script)
-
-    renderBooks(books);
-
-  </script>
-
-</body>
-</html>
+setInterval(fetchSeatData, 1000);
+fetchSeatData();
