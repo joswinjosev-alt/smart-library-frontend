@@ -36,7 +36,6 @@
 
     .container{display:grid;grid-template-columns:300px 1fr;gap:20px;margin-top:12px}
     .panel{background:var(--muted);padding:14px;border-radius:12px}
-
     .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
     .legend .item{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;background:white}
     .chip{width:14px;height:14px;border-radius:4px}
@@ -47,27 +46,21 @@
     .map-wrap{padding:10px}
     .map{display:grid;grid-template-columns:repeat(8,1fr);gap:14px;align-items:center;justify-items:center}
     .floor-label{grid-column:1/-1;padding:8px 12px;border-radius:8px;background:white;font-weight:700;margin-top:8px}
-
     .seat{
-      width:var(--seat-size);height:var(--seat-size);
-      display:flex;flex-direction:column;align-items:center;justify-content:center;
-      border-radius:12px;border:2px dashed #ddd;
-      background:white;box-shadow:0 6px 14px rgba(0,0,0,0.06);
-      transition:0.2s;
-      position:relative;
+      width:var(--seat-size);height:var(--seat-size);display:flex;align-items:center;justify-content:center;border-radius:12px;border:2px dashed transparent;user-select:none;transition:transform .12s,opacity .12s;position:relative;background:white;box-shadow:0 6px 14px rgba(0,0,0,0.06)
     }
-    .seat.occupied{background:var(--accent);border-color:var(--accent);color:white}
-    .seat.reserved{background:var(--reserved);border-color:#ffa86a}
     .seat .label{font-weight:700}
-    .seat .status{font-size:11px;margin-top:4px;opacity:0.9}
+    .seat.free{border-color:#e6e6e6;background:white;color:var(--text)}
+    .seat.occupied{background:var(--accent);color:white}
+    .seat.reserved{background:var(--reserved)}
+    .seat .status{position:absolute;bottom:6px;font-size:11px;opacity:0.9}
 
     .search{display:flex;gap:10px;margin-bottom:18px}
     .search input{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
     .book-list{background:var(--muted);padding:12px;border-radius:10px}
-
     table{width:100%;border-collapse:collapse}
     th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
-    th{background:white;font-weight:700}
+    th{background:white}
 
     @media(max-width:900px){
       .container{grid-template-columns:1fr}
@@ -78,220 +71,220 @@
 </head>
 
 <body>
-
-<header>
-  <div class="logo">
-    <div class="mark">SLS</div>
-    <div><h1>Smart Library System</h1></div>
-  </div>
-  <nav>
-    <button id="navHome" class="active">Home</button>
-    <button id="navSeat">Seat Map</button>
-    <button id="navBooks">Book Locations</button>
-  </nav>
-</header>
-
-<div class="page-wrap">
-
-  <!-- HOME -->
-  <section id="home" class="page visible">
-    <div class="hero panel">
-      <h2>Welcome to Smart Library</h2>
-      <p>This demo shows a live seat occupancy map and a book-locator page.</p>
-      <div style="margin-top:14px">
-        <button class="btn" onclick="showPage('seat')">Open Seat Map</button>
-        <button class="btn" onclick="showPage('books')">Open Book Locations</button>
-      </div>
+  <header>
+    <div class="logo">
+      <div class="mark">SLS</div>
+      <div><h1>Smart Library System</h1></div>
     </div>
-  </section>
+    <nav>
+      <button id="navHome" class="active">Home</button>
+      <button id="navSeat">Seat Map</button>
+      <button id="navBooks">Book Locations</button>
+    </nav>
+  </header>
 
-  <!-- SEAT MAP -->
-  <section id="seat" class="page">
-    <div class="container">
+  <div class="page-wrap">
 
-      <aside>
-        <div class="panel">
-          <h3>Legend & Stats</h3>
+    <!-- HOME -->
+    <section id="home" class="page visible">
+      <div class="hero panel">
+        <h2>Welcome to Smart Library</h2>
+        <p>This demo shows a live seat map and book locator system.</p>
+        <div style="margin-top:14px">
+          <button class="btn" onclick="showPage('seat')">Open Seat Map</button>
+          <button class="btn" onclick="showPage('books')">Open Book Locations</button>
+        </div>
+      </div>
+    </section>
 
-          <div class="legend">
-            <div class="item"><div class="chip free"></div><div>Free</div></div>
-            <div class="item"><div class="chip occupied"></div><div>Occupied</div></div>
-            <div class="item"><div class="chip reserved"></div><div>Reserved</div></div>
+    <!-- SEAT MAP -->
+    <section id="seat" class="page">
+      <div class="container">
+        <aside>
+          <div class="panel">
+            <h3>Legend & Stats</h3>
+
+            <div class="legend">
+              <div class="item"><div class="chip free"></div><div>Free</div></div>
+              <div class="item"><div class="chip occupied"></div><div>Occupied</div></div>
+              <div class="item"><div class="chip reserved"></div><div>Reserved</div></div>
+            </div>
+
+            <p>Total seats: <b id="totalCnt">8</b></p>
+            <p>Free: <b id="freeCnt">0</b></p>
+            <p>Occupied: <b id="occCnt">0</b></p>
+            <p>Reserved: <b id="resCnt">0</b></p>
           </div>
+        </aside>
 
-          <p>Total seats: <b id="totalCnt">8</b></p>
-          <p>Free: <b id="freeCnt">0</b></p>
-          <p>Occupied: <b id="occCnt">0</b></p>
-          <p>Reserved: <b id="resCnt">0</b></p>
-        </div>
-      </aside>
-
-      <main>
-        <div class="map-wrap panel">
-          <strong>Library Map — Live</strong>
-          <div id="map" class="map"></div>
-        </div>
-      </main>
-
-    </div>
-  </section>
-
-  <!-- BOOK LOCATION -->
-  <section id="books" class="page">
-    <div class="panel" style="max-width:980px;margin:0 auto">
-      <h2 style="color:var(--accent)">Find Book Location</h2>
-
-      <div class="search">
-        <input id="searchBox" placeholder="Search by title or author..." oninput="searchBooks()" />
-        <button onclick="searchBooks()" style="background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer">Search</button>
+        <main>
+          <div class="map-wrap panel">
+            <strong>Library Map — Live</strong>
+            <div id="map" class="map"></div>
+          </div>
+        </main>
       </div>
+    </section>
 
-      <div class="book-list">
-        <table id="bookTable">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Author</th>
-              <th>Floor</th>
-              <th>Section</th>
-              <th>Shelf</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-        <p id="noRes" style="display:none;color:#777;font-style:italic;margin-top:10px">No books found.</p>
+    <!-- BOOKS -->
+    <section id="books" class="page">
+      <div class="panel" style="max-width:980px;margin:0 auto">
+        <h2 style="color:var(--accent)">Find Book Location</h2>
+
+        <div class="search">
+          <input id="searchBox" placeholder="Search by title or author..." oninput="searchBooks()" />
+          <button onclick="searchBooks()" style="background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer">Search</button>
+        </div>
+
+        <div class="book-list">
+          <table id="bookTable">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Floor</th>
+                <th>Section</th>
+                <th>Shelf</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p id="noRes" style="display:none;color:#777;font-style:italic;margin-top:10px">No books found.</p>
+        </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-</div>
+  </div>
 
-<footer style="text-align:center;padding:18px;color:#666">
-  Demo created for ECE Smart Library project
-</footer>
+  <footer style="text-align:center;padding:18px;color:#666">
+    Demo created for ECE Smart Library project
+  </footer>
 
+  <script>
+    const API_URL = "https://smart-library-backend-1.onrender.com";
 
-<script>
-/* ---------------- BACKEND URL ---------------- */
-const API_URL = "https://smart-library-backend-1.onrender.com";
+    const pages = {
+      home: document.getElementById('home'),
+      seat: document.getElementById('seat'),
+      books: document.getElementById('books')
+    };
 
-/* ---------------- PAGE NAVIGATION ---------------- */
-function showPage(id){
-  document.querySelectorAll(".page").forEach(p=>p.classList.remove("visible"));
-  document.getElementById(id).classList.add("visible");
+    function showPage(id){
+      Object.values(pages).forEach(p=>p.classList.remove('visible'));
+      pages[id].classList.add('visible');
+      document.querySelectorAll("nav button").forEach(btn=>btn.classList.remove("active"));
+      document.getElementById("nav"+id.charAt(0).toUpperCase()+id.slice(1)).classList.add("active");
+    }
 
-  document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
-  document.getElementById("nav"+id.charAt(0).toUpperCase()+id.slice(1)).classList.add("active");
-}
+    navHome.onclick = ()=>showPage("home");
+    navSeat.onclick = ()=>showPage("seat");
+    navBooks.onclick = ()=>showPage("books");
 
-navHome.onclick = ()=>showPage("home");
-navSeat.onclick = ()=>showPage("seat");
-navBooks.onclick = ()=>showPage("books");
+    const seats = [
+      { id:'A1', floor:1, status:'free' },{ id:'A2', floor:1, status:'free' },
+      { id:'A3', floor:1, status:'free' },{ id:'A4', floor:1, status:'free' },
+      { id:'B1', floor:2, status:'free' },{ id:'B2', floor:2, status:'free' },
+      { id:'B3', floor:2, status:'free' },{ id:'B4', floor:2, status:'free' }
+    ];
 
+    function renderSeats(){
+      const map = document.getElementById("map");
+      map.innerHTML = "";
 
-/* ---------------- SEAT RENDERING ---------------- */
-const seats = [
-  { id:'A1', floor:1 },{ id:'A2', floor:1 },
-  { id:'A3', floor:1 },{ id:'A4', floor:1 },
-  { id:'B1', floor:2 },{ id:'B2', floor:2 },
-  { id:'B3', floor:2 },{ id:'B4', floor:2 }
-];
+      [1,2].forEach(f=>{
+        map.innerHTML += `<div class="floor-label">Floor ${f}</div>`;
+        seats.filter(s=>s.floor===f).forEach(s=>{
+          map.innerHTML += `<div id="${s.id}" class="seat free">
+            <div class="label">${s.id}</div>
+            <div class="status">free</div>
+          </div>`;
+        });
+      });
+    }
+    renderSeats();
 
-function renderSeats(){
-  const map = document.getElementById("map");
-  map.innerHTML = "";
+    async function fetchSeatStatus(){
+      try{
+        const res = await fetch(API_URL+"/seats");
+        const data = await res.json();
 
-  [1,2].forEach(f=>{
-    map.innerHTML += `<div class="floor-label">Floor ${f}</div>`;
-    seats.filter(s=>s.floor===f).forEach(s=>{
-      map.innerHTML += `
-        <div id="${s.id}" class="seat free">
-          <div class="label">${s.id}</div>
-          <div class="status">free</div>
-        </div>`;
-    });
-  });
-}
-renderSeats();
+        let free=0,occ=0,resv=0;
 
+        seats.forEach(s=>{
+          const state = (data[s.id]||"free").toLowerCase();
+          const el = document.getElementById(s.id);
+          el.className = "seat "+state;
+          el.querySelector(".status").textContent = state;
 
-/* ---------------- LIVE BACKEND SYNC ---------------- */
-async function fetchSeatStatus(){
-  try{
-    const res = await fetch(API_URL+"/seats");
-    const data = await res.json();
+          if(state==="free") free++;
+          if(state==="occupied") occ++;
+          if(state==="reserved") resv++;
+        });
 
-    let free=0, occ=0, resv=0;
+        freeCnt.textContent = free;
+        occCnt.textContent = occ;
+        resCnt.textContent = resv;
 
-    seats.forEach(s=>{
-      const state = (data[s.id] || "free").toLowerCase();
-      const el = document.getElementById(s.id);
+      }catch(e){}
+    }
 
-      el.className = "seat " + state;
-      el.querySelector(".status").textContent = state;
+    // precise 1-second refresh loop
+    async function loopUpdate(){
+      await fetchSeatStatus();
+      setTimeout(loopUpdate, 1000);
+    }
+    loopUpdate();
 
-      if(state==="free") free++;
-      if(state==="occupied") occ++;
-      if(state==="reserved") resv++;
-    });
+    const books = [
+      {title:'Digital Electronics',author:'M. Morris Mano',floor:'Floor 1',section:'A',shelf:'Shelf 1'},
+      {title:'Signals and Systems',author:'Oppenheim',floor:'Floor 1',section:'A',shelf:'Shelf 2'},
+      {title:'C Programming',author:'Dennis Ritchie',floor:'Floor 1',section:'B',shelf:'Shelf 1'},
+      {title:'Data Structures in C',author:'Reema Thareja',floor:'Floor 1',section:'C',shelf:'Shelf 2'},
+      {title:'Analog Electronics',author:'Sedra/Smith',floor:'Floor 1',section:'B',shelf:'Shelf 1'},
+      {title:'Control Systems',author:'Nagrath & Gopal',floor:'Floor 1',section:'C',shelf:'Shelf 2'},
+      {title:'Engineering Maths 1',author:'B.S. Grewal',floor:'Floor 1',section:'A',shelf:'Shelf 1'},
+      {title:'Circuit Theory',author:'V.K. Mehta',floor:'Floor 1',section:'B',shelf:'Shelf 2'},
+      {title:'Signals Lab Manual',author:'MIT Press',floor:'Floor 1',section:'C',shelf:'Shelf 1'},
+      {title:'Basic Electronics',author:'J.B. Gupta',floor:'Floor 1',section:'A',shelf:'Shelf 2'},
+      {title:'Embedded Systems',author:'Raj Kamal',floor:'Floor 2',section:'A',shelf:'Shelf 1'},
+      {title:'Python for Everyone',author:'Charles Severance',floor:'Floor 2',section:'A',shelf:'Shelf 2'},
+      {title:'Microprocessor Basics',author:'Gaonkar',floor:'Floor 2',section:'B',shelf:'Shelf 1'},
+      {title:'Network Analysis',author:'Van Valkenburg',floor:'Floor 2',section:'C',shelf:'Shelf 2'},
+      {title:'Communication Systems',author:'Simon Haykin',floor:'Floor 2',section:'B',shelf:'Shelf 1'},
+      {title:'Digital Signal Processing',author:'Proakis',floor:'Floor 2',section:'C',shelf:'Shelf 2'},
+      {title:'Machine Learning Basics',author:'Tom Mitchell',floor:'Floor 2',section:'A',shelf:'Shelf 1'},
+      {title:'Operating Systems',author:'Galvin',floor:'Floor 2',section:'B',shelf:'Shelf 2'},
+      {title:'Computer Networks',author:'Tanenbaum',floor:'Floor 2',section:'C',shelf:'Shelf 1'},
+      {title:'IoT Fundamentals',author:'Cisco Press',floor:'Floor 2',section:'A',shelf:'Shelf 2'}
+    ];
 
-    freeCnt.textContent = free;
-    occCnt.textContent = occ;
-    resCnt.textContent = resv;
+    function searchBooks(){
+      const q = searchBox.value.toLowerCase();
+      const tbody = document.querySelector("#bookTable tbody");
+      tbody.innerHTML = "";
 
-  }catch(err){
-    console.log("Backend offline");
-  }
-}
+      const results = books.filter(b =>
+        b.title.toLowerCase().includes(q) ||
+        b.author.toLowerCase().includes(q)
+      );
 
-/* ---- 1-second EXACT update loop (no browser throttling) ---- */
-async function loopUpdate(){
-  await fetchSeatStatus();
-  setTimeout(loopUpdate, 1000);  
-}
-loopUpdate();
+      if(results.length===0){
+        noRes.style.display="block";
+        return;
+      }
+      noRes.style.display="none";
 
-
-/* ---------------- BOOK SEARCH ---------------- */
-const books = [
-  {title:'Digital Electronics',author:'M. Morris Mano',floor:'Floor 1',section:'A',shelf:'Shelf 1'},
-  {title:'Signals and Systems',author:'Oppenheim',floor:'Floor 1',section:'A',shelf:'Shelf 2'},
-  {title:'Python for Everyone',author:'Charles Severance',floor:'Floor 2',section:'A',shelf:'Shelf 2'}
-];
-
-function renderBooks(list){
-  const tbody = document.querySelector("#bookTable tbody");
-  tbody.innerHTML = "";
-
-  if(list.length === 0){
-    noRes.style.display="block";
-    return;
-  }
-
-  noRes.style.display="none";
-
-  list.forEach(b=>{
-    tbody.innerHTML += `
-      <tr>
-        <td>${b.title}</td>
-        <td>${b.author}</td>
-        <td>${b.floor}</td>
-        <td>${b.section}</td>
-        <td>${b.shelf}</td>
-      </tr>`;
-  });
-}
-
-function searchBooks(){
-  const q = searchBox.value.toLowerCase();
-  renderBooks(
-    books.filter(b=>b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q))
-  );
-}
-
-renderBooks(books);
-
-</script>
-
+      results.forEach(b=>{
+        tbody.innerHTML += `<tr>
+          <td>${b.title}</td>
+          <td>${b.author}</td>
+          <td>${b.floor}</td>
+          <td>${b.section}</td>
+          <td>${b.shelf}</td>
+        </tr>`;
+      });
+    }
+    searchBooks();
+  </script>
 </body>
 </html>
