@@ -1,53 +1,247 @@
-// ===== BACKEND URL =====
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Smart Library — Live Seat Map</title>
+
+  <style>
+    :root{
+      --accent:#ff7a00;
+      --bg:#ffffff;
+      --muted:#f6f6f6;
+      --text:#222;
+      --seat-size:64px;
+      --reserved:#ffddc8;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box}
+    body{margin:0;background:#fff;color:var(--text)}
+
+    header{
+      display:flex;align-items:center;
+      padding:18px 24px;border-bottom:1px solid #eee;
+    }
+    nav button{
+      background:transparent;border:none;
+      color:var(--accent);padding:8px 12px;font-weight:600;
+    }
+    nav button.active{background:var(--accent);color:white;border-radius:8px}
+
+    .page-wrap{padding:20px;max-width:1200px;margin:0 auto}
+    .page{display:none}
+    .page.visible{display:block}
+
+    .container{display:grid;grid-template-columns:300px 1fr;gap:20px}
+
+    .panel{background:var(--muted);padding:14px;border-radius:12px}
+
+    .map{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:18px;
+      justify-items:center;
+    }
+    .floor-label{grid-column:1/-1;font-weight:700;margin-top:10px}
+
+    .seat{
+      width:var(--seat-size);height:var(--seat-size);
+      display:flex;flex-direction:column;align-items:center;
+      justify-content:center;border-radius:12px;
+      background:white;border:2px solid #ddd;
+      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+    }
+    .seat.occupied{background:var(--accent);color:white}
+    .seat.reserved{background:var(--reserved)}
+    .seat.free{background:white}
+
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h2 style="margin-right:auto">Smart Library System</h2>
+  <nav>
+    <button id="navHome" class="active">Home</button>
+    <button id="navSeat">Seat Map</button>
+    <button id="navBooks">Book Locations</button>
+  </nav>
+</header>
+
+<div class="page-wrap">
+
+  <!-- HOME PAGE -->
+  <section id="home" class="page visible">
+    <div class="panel">
+      <h2 style="color:var(--accent)">Welcome to Smart Library</h2>
+      <p>This system shows **live seat status** from the ESP32 + backend.</p>
+    </div>
+  </section>
+
+  <!-- SEAT MAP -->
+  <section id="seat" class="page">
+    <div class="container">
+
+      <aside class="panel">
+        <h3>Legend & Stats</h3>
+
+        <p>Total seats: <b id="totalCnt">8</b></p>
+        <p>Free: <b id="freeCnt">0</b></p>
+        <p>Occupied: <b id="occCnt">0</b></p>
+        <p>Reserved: <b id="resCnt">0</b></p>
+      </aside>
+
+      <main class="panel">
+        <h3>Library Map — Live</h3>
+        <div id="map" class="map"></div>
+      </main>
+
+    </div>
+  </section>
+
+  <!-- BOOKS -->
+  <section id="books" class="page">
+    <div class="panel">
+      <h2 style="color:var(--accent)">Book Locations</h2>
+
+      <input id="searchBox" placeholder="Search…" oninput="searchBooks()" style="width:100%;padding:10px;margin-bottom:10px"/>
+
+      <table id="bookTable" style="width:100%">
+        <thead><tr><th>Title</th><th>Author</th><th>Floor</th></tr></thead>
+        <tbody></tbody>
+      </table>
+
+      <p id="noRes" style="display:none;color:#777">No books found.</p>
+    </div>
+  </section>
+
+</div>
+
+<footer style="text-align:center;padding:20px;color:#666">
+  Demo created for Smart Library Project
+</footer>
+
+<!-- ======================= JAVASCRIPT ======================= -->
+
+<script>
+/* ------------------ BACKEND URL ------------------ */
 const API_URL = "https://smart-library-backend-1.onrender.com";
 
-// ===== Update seat display =====
-function updateSeatColors(seats) {
-    Object.keys(seats).forEach(seatId => {
-        const el = document.getElementById(seatId);
-        if (!el) return;
+/* ------------------ PAGE SWITCHING ----------------- */
+const pages = {
+  home: document.getElementById("home"),
+  seat: document.getElementById("seat"),
+  books: document.getElementById("books")
+};
 
-        const status = seats[seatId].toLowerCase();  // <--- IMPORTANT
+function showPage(id){
+  Object.values(pages).forEach(p => p.classList.remove("visible"));
+  pages[id].classList.add("visible");
 
-        if (status === "free") {
-            el.style.background = "white";
-            el.style.color = "black";
-        }
-        else if (status === "occupied") {
-            el.style.background = "#F44336";
-            el.style.color = "white";
-        }
-        else if (status === "reserved") {
-            el.style.background = "#FFC107";
-            el.style.color = "black";
-        }
+  document.querySelectorAll("nav button").forEach(btn=>btn.classList.remove("active"));
+  document.getElementById("nav" + id.charAt(0).toUpperCase()+id.slice(1)).classList.add("active");
+}
 
-        el.querySelector(".status").textContent = status;
+document.getElementById("navHome").onclick = ()=>showPage("home");
+document.getElementById("navSeat").onclick = ()=>showPage("seat");
+document.getElementById("navBooks").onclick = ()=>showPage("books");
+
+/* ------------------ SEATS ------------------ */
+const seats = [
+  { id:"A1", floor:1 },{ id:"A2", floor:1 },
+  { id:"A3", floor:1 },{ id:"A4", floor:1 },
+  { id:"B1", floor:2 },{ id:"B2", floor:2 },
+  { id:"B3", floor:2 },{ id:"B4", floor:2 }
+];
+
+const mapDiv = document.getElementById("map");
+
+function renderSeats(){
+  mapDiv.innerHTML = "";
+
+  [1,2].forEach(floor=>{
+    let lbl = document.createElement("div");
+    lbl.className="floor-label";
+    lbl.innerText = "Floor " + floor;
+    mapDiv.appendChild(lbl);
+
+    seats.filter(s=>s.floor===floor).forEach(s=>{
+      let div = document.createElement("div");
+      div.id = s.id;
+      div.className = "seat free";
+      div.innerHTML = `<b>${s.id}</b>`;
+      mapDiv.appendChild(div);
     });
+  });
 }
 
-// ===== Update stats =====
-function updateStats(seats) {
-    const values = Object.values(seats).map(x => x.toLowerCase());
+renderSeats();
 
-    document.getElementById("freeCnt").textContent = values.filter(s => s === "free").length;
-    document.getElementById("occCnt").textContent = values.filter(s => s === "occupied").length;
-    document.getElementById("resCnt").textContent = values.filter(s => s === "reserved").length;
+/* -------------- LIVE BACKEND SYNC --------------- */
+async function fetchSeatStatus(){
+  try{
+    const res = await fetch(API_URL + "/seats");
+    const data = await res.json();
+
+    let free=0, occ=0, resv=0;
+
+    seats.forEach(s=>{
+      const state = (data[s.id] || "free").toLowerCase();
+      const el = document.getElementById(s.id);
+
+      el.className = "seat " + state;
+
+      if(state==="free") free++;
+      if(state==="occupied") occ++;
+      if(state==="reserved") resv++;
+    });
+
+    document.getElementById("freeCnt").innerText = free;
+    document.getElementById("occCnt").innerText = occ;
+    document.getElementById("resCnt").innerText = resv;
+
+  }catch(e){
+    console.log("Backend offline", e);
+  }
 }
 
-// ===== Fetch from backend every 1 second =====
-async function fetchSeatData() {
-    try {
-        const res = await fetch(`${API_URL}/seats`);
-        const data = await res.json();
+setInterval(fetchSeatStatus, 1000);
+fetchSeatStatus();
 
-        updateSeatColors(data);
-        updateStats(data);
+/* ------------------ BOOKS ------------------ */
+const books = [
+  {title:"Signals", author:"Oppenheim", floor:"1"},
+  {title:"Digital Electronics", author:"Morris Mano", floor:"1"},
+  {title:"Python", author:"Charles Severance", floor:"2"}
+];
 
-    } catch (e) {
-        console.log("Backend not reachable");
-    }
+function searchBooks(){
+  const q = document.getElementById("searchBox").value.toLowerCase();
+  const tbody = document.querySelector("#bookTable tbody");
+  tbody.innerHTML = "";
+
+  const results = books.filter(b => 
+    b.title.toLowerCase().includes(q) ||
+    b.author.toLowerCase().includes(q)
+  );
+
+  if(results.length===0){
+    document.getElementById("noRes").style.display="block";
+    return;
+  }
+  document.getElementById("noRes").style.display="none";
+
+  results.forEach(b=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${b.title}</td><td>${b.author}</td><td>${b.floor}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
-setInterval(fetchSeatData, 1000);
-fetchSeatData();
+searchBooks();
+</script>
+
+</body>
+</html>
