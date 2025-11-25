@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Smart Library — Live Seat Map</title>
+  <title>Smart Library — Single Page Demo</title>
 
   <style>
     :root{
@@ -13,244 +13,247 @@
       --text:#222;
       --seat-size:64px;
       --reserved:#ffddc8;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     }
-
     *{box-sizing:border-box}
-    body{margin:0;background:#fff;color:var(--text)}
+    body{margin:0;background:linear-gradient(180deg,var(--bg),#fff);color:var(--text);min-height:100vh}
+    header{display:flex;align-items:center;gap:16px;padding:18px 24px;border-bottom:1px solid #eee}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo .mark{width:42px;height:42px;border-radius:10px;background:var(--accent);display:grid;place-items:center;color:white;font-weight:700}
+    h1{font-size:18px;margin:0}
+    nav{margin-left:auto;display:flex;gap:12px}
+    nav button{background:transparent;border:none;color:var(--accent);font-weight:600;cursor:pointer;padding:8px 10px;border-radius:8px}
+    nav button.active{background:var(--accent);color:white}
 
-    header{
-      display:flex;align-items:center;
-      padding:18px 24px;border-bottom:1px solid #eee;
-    }
-    nav button{
-      background:transparent;border:none;
-      color:var(--accent);padding:8px 12px;font-weight:600;
-      cursor:pointer;
-    }
-    nav button.active{
-      background:var(--accent);
-      color:white;border-radius:8px;
-    }
+    .page-wrap{padding:20px;max-width:1200px;margin:18px auto}
+    .page{display:none;opacity:0;transform:translateY(6px);transition:opacity .25s, transform .25s}
+    .page.visible{display:block;opacity:1;transform:translateY(0)}
 
-    .page-wrap{padding:20px;max-width:1200px;margin:0 auto}
-    .page{display:none}
-    .page.visible{display:block}
+    .hero{padding:40px 20px;text-align:center}
+    .hero h2{color:var(--accent);font-size:32px;margin:0 0 8px}
+    .hero p{max-width:900px;margin:8px auto;color:#555;line-height:1.6}
+    .btn{display:inline-block;margin-top:18px;padding:10px 18px;background:var(--accent);color:#fff;border-radius:8px;text-decoration:none;cursor:pointer;border:none}
 
-    .container{display:grid;grid-template-columns:300px 1fr;gap:20px}
-
+    .container{display:grid;grid-template-columns:300px 1fr;gap:20px;margin-top:12px}
     .panel{background:var(--muted);padding:14px;border-radius:12px}
+    .legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+    .legend .item{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:8px;background:white}
+    .chip{width:14px;height:14px;border-radius:4px}
+    .chip.free{background:transparent;border:2px solid #ddd}
+    .chip.occupied{background:var(--accent)}
+    .chip.reserved{background:#ffb380}
 
-    .map{
-      display:grid;
-      grid-template-columns:repeat(4,1fr);
-      gap:18px;
-      justify-items:center;
-    }
-    .floor-label{grid-column:1/-1;font-weight:700;margin-top:10px}
-
+    .map-wrap{padding:10px}
+    .map{display:grid;grid-template-columns:repeat(8,1fr);gap:14px;align-items:center;justify-items:center}
+    .floor-label{grid-column:1/-1;padding:8px 12px;border-radius:8px;background:white;font-weight:700;margin-top:8px}
     .seat{
-      width:var(--seat-size);height:var(--seat-size);
-      display:flex;flex-direction:column;align-items:center;
-      justify-content:center;border-radius:12px;
-      background:white;border:2px solid #ddd;
-      box-shadow:0 4px 10px rgba(0,0,0,0.1);
+      width:var(--seat-size);height:var(--seat-size);display:flex;align-items:center;justify-content:center;border-radius:12px;border:2px dashed transparent;user-select:none;transition:transform .12s,opacity .12s;position:relative;background:white;box-shadow:0 6px 14px rgba(0,0,0,0.06)
     }
+    .seat .label{font-weight:700}
+    .seat.free{border-color:#e6e6e6;background:white;color:var(--text)}
     .seat.occupied{background:var(--accent);color:white}
     .seat.reserved{background:var(--reserved)}
-    .seat.free{background:white}
+    .seat .status{position:absolute;bottom:6px;font-size:11px;opacity:0.9}
+
+    .search{display:flex;gap:10px;margin-bottom:18px}
+    .search input{flex:1;padding:10px;border-radius:8px;border:1px solid #ddd}
+    .book-list{background:var(--muted);padding:12px;border-radius:10px}
+    table{width:100%;border-collapse:collapse}
+    th,td{padding:10px;border-bottom:1px solid #eee;text-align:left}
+    th{background:white}
+
+    @media(max-width:900px){
+      .container{grid-template-columns:1fr}
+      .map{grid-template-columns:repeat(4,1fr)}
+      .panel{order:2}
+    }
   </style>
 </head>
 
 <body>
-
-<header>
-  <h2 style="margin-right:auto">Smart Library System</h2>
-  <nav id="navbar">
-    <button id="navHome" class="active">Home</button>
-    <button id="navSeat">Seat Map</button>
-    <button id="navBooks">Book Locations</button>
-  </nav>
-</header>
-
-<div class="page-wrap">
-
-  <!-- HOME PAGE -->
-  <section id="home" class="page visible">
-    <div class="panel">
-      <h2 style="color:var(--accent)">Welcome to Smart Library</h2>
-      <p>This system shows <b>live seat updates</b> from the backend.</p>
+  <header>
+    <div class="logo">
+      <div class="mark">SLS</div>
+      <div><h1>Smart Library System</h1></div>
     </div>
-  </section>
+    <nav>
+      <button id="navHome" class="active">Home</button>
+      <button id="navSeat">Seat Map</button>
+      <button id="navBooks">Book Locations</button>
+    </nav>
+  </header>
 
-  <!-- SEAT MAP -->
-  <section id="seat" class="page">
-    <div class="container">
+  <div class="page-wrap">
 
-      <aside class="panel">
-        <h3>Legend & Stats</h3>
-        <p>Total seats: <b id="totalCnt">8</b></p>
-        <p>Free: <b id="freeCnt">0</b></p>
-        <p>Occupied: <b id="occCnt">0</b></p>
-        <p>Reserved: <b id="resCnt">0</b></p>
-      </aside>
+    <!-- HOME -->
+    <section id="home" class="page visible">
+      <div class="hero panel">
+        <h2>Welcome to Smart Library</h2>
+        <p>This demo shows a live seat occupancy map and a book-locator page.</p>
+        <div style="margin-top:14px">
+          <button class="btn" onclick="showPage('seat')">Open Seat Map</button>
+          <button class="btn" onclick="showPage('books')">Open Book Locations</button>
+        </div>
+      </div>
+    </section>
 
-      <main class="panel">
-        <h3>Library Map — Live</h3>
-        <div id="map" class="map"></div>
-      </main>
+    <!-- SEAT MAP -->
+    <section id="seat" class="page">
+      <div class="container">
+        <aside>
+          <div class="panel">
+            <h3>Legend & Stats</h3>
 
-    </div>
-  </section>
+            <div class="legend">
+              <div class="item"><div class="chip free"></div><div>Free</div></div>
+              <div class="item"><div class="chip occupied"></div><div>Occupied</div></div>
+              <div class="item"><div class="chip reserved"></div><div>Reserved</div></div>
+            </div>
 
-  <!-- BOOKS -->
-  <section id="books" class="page">
-    <div class="panel">
-      <h2 style="color:var(--accent)">Book Locations</h2>
+            <p>Total seats: <b id="totalCnt">8</b></p>
+            <p>Free: <b id="freeCnt">0</b></p>
+            <p>Occupied: <b id="occCnt">0</b></p>
+            <p>Reserved: <b id="resCnt">0</b></p>
+          </div>
+        </aside>
 
-      <input id="searchBox" placeholder="Search…" oninput="searchBooks()" 
-             style="width:100%;padding:10px;margin-bottom:10px"/>
+        <main>
+          <div class="map-wrap panel">
+            <strong>Library Map — Live</strong>
+            <div id="map" class="map"></div>
+          </div>
+        </main>
+      </div>
+    </section>
 
-      <table id="bookTable" style="width:100%">
-        <thead><tr><th>Title</th><th>Author</th><th>Floor</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <!-- BOOKS -->
+    <section id="books" class="page">
+      <div class="panel" style="max-width:980px;margin:0 auto">
+        <h2 style="color:var(--accent)">Find Book Location</h2>
 
-      <p id="noRes" style="display:none;color:#777">No books found.</p>
-    </div>
-  </section>
+        <div class="search">
+          <input id="searchBox" placeholder="Search by title or author..." oninput="searchBooks()" />
+          <button onclick="searchBooks()" style="background:var(--accent);color:#fff;border:none;padding:10px 14px;border-radius:8px;cursor:pointer">Search</button>
+        </div>
 
-</div>
+        <div class="book-list">
+          <table id="bookTable">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Author</th>
+                <th>Floor</th>
+                <th>Section</th>
+                <th>Shelf</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p id="noRes" style="display:none;color:#777;font-style:italic;margin-top:10px">No books found.</p>
+        </div>
+      </div>
+    </section>
 
-<footer style="text-align:center;padding:20px;color:#666">
-  Demo created for Smart Library Project
-</footer>
+  </div>
 
-<!-- ======================= JAVASCRIPT BELOW ======================= -->
+  <footer style="text-align:center;padding:18px;color:#666">
+    Demo created for ECE Smart Library project
+  </footer>
 
-<script>
-/* ------------------ BACKEND URL ------------------ */
-const API_URL = "https://smart-library-backend-83ly.onrender.com";
+  <script>
+    const API_URL = "https://smart-library-backend-1.onrender.com";
 
+    const pages = {
+      home: document.getElementById('home'),
+      seat: document.getElementById('seat'),
+      books: document.getElementById('books')
+    };
 
-/* ------------------ PAGE SWITCHING ----------------- */
-const pages = {
-  home: document.getElementById("home"),
-  seat: document.getElementById("seat"),
-  books: document.getElementById("books")
-};
+    function showPage(id){
+      Object.values(pages).forEach(p=>p.classList.remove('visible'));
+      pages[id].classList.add('visible');
+      document.querySelectorAll("nav button").forEach(btn=>btn.classList.remove("active"));
+      document.getElementById("nav"+id.charAt(0).toUpperCase()+id.slice(1)).classList.add("active");
+    }
 
-const navButtons = {
-  home: document.getElementById("navHome"),
-  seat: document.getElementById("navSeat"),
-  books: document.getElementById("navBooks")
-};
+    navHome.onclick = ()=>showPage("home");
+    navSeat.onclick = ()=>showPage("seat");
+    navBooks.onclick = ()=>showPage("books");
 
-function showPage(id){
-  Object.values(pages).forEach(p => p.classList.remove("visible"));
-  pages[id].classList.add("visible");
+    const seats = [
+      { id:'A1', floor:1, status:'free' },{ id:'A2', floor:1, status:'free' },
+      { id:'A3', floor:1, status:'free' },{ id:'A4', floor:1, status:'free' },
+      { id:'B1', floor:2, status:'free' },{ id:'B2', floor:2, status:'free' },
+      { id:'B3', floor:2, status:'free' },{ id:'B4', floor:2, status:'free' }
+    ];
 
-  Object.values(navButtons).forEach(b => b.classList.remove("active"));
-  navButtons[id].classList.add("active");
-}
+    function renderSeats(){
+      const map = document.getElementById("map");
+      map.innerHTML = "";
 
-navButtons.home.onclick = ()=>showPage("home");
-navButtons.seat.onclick = ()=>showPage("seat");
-navButtons.books.onclick = ()=>showPage("books");
+      [1,2].forEach(f=>{
+        map.innerHTML += `<div class="floor-label">Floor ${f}</div>`;
+        seats.filter(s=>s.floor===f).forEach(s=>{
+          map.innerHTML += `<div id="${s.id}" class="seat free"><b>${s.id}</b></div>`;
+        });
+      });
+    }
+    renderSeats();
 
-/* ------------------ SEAT RENDER ------------------ */
-const seats = [
-  { id:"A1", floor:1 },{ id:"A2", floor:1 },
-  { id:"A3", floor:1 },{ id:"A4", floor:1 },
-  { id:"B1", floor:2 },{ id:"B2", floor:2 },
-  { id:"B3", floor:2 },{ id:"B4", floor:2 }
-];
+    async function fetchSeatStatus(){
+      try{
+        const res = await fetch(API_URL+"/seats");
+        const data = await res.json();
 
-const mapDiv = document.getElementById("map");
+        let free=0,occ=0,resv=0;
 
-function renderSeats(){
-  mapDiv.innerHTML = "";
+        seats.forEach(s=>{
+          const state = (data[s.id]||"free").toLowerCase();
+          const el = document.getElementById(s.id);
+          el.className = "seat "+state;
+          if(state==="free") free++;
+          if(state==="occupied") occ++;
+          if(state==="reserved") resv++;
+        });
 
-  [1,2].forEach(floor=>{
-    let lbl = document.createElement("div");
-    lbl.className="floor-label";
-    lbl.innerText = "Floor " + floor;
-    mapDiv.appendChild(lbl);
+        freeCnt.innerText = free;
+        occCnt.innerText = occ;
+        resCnt.innerText = resv;
 
-    seats.filter(s=>s.floor===floor).forEach(s=>{
-      let div = document.createElement("div");
-      div.id = s.id;
-      div.className = "seat free";
-      div.innerHTML = `<b>${s.id}</b>`;
-      mapDiv.appendChild(div);
-    });
-  });
-}
-renderSeats();
+      }catch(e){}
+    }
+    setInterval(fetchSeatStatus, 1000);
+    fetchSeatStatus();
 
-/* ------------------ LIVE BACKEND FETCH ------------------ */
-async function fetchSeatStatus(){
-  try{
-    const response = await fetch(API_URL + "/seats");
-    const data = await response.json();
+    const books=[
+      {title:'Digital Electronics',author:'M. Morris Mano',floor:'Floor 1',section:'A',shelf:'Shelf 1'},
+      {title:'Signals and Systems',author:'Oppenheim',floor:'Floor 1',section:'A',shelf:'Shelf 2'},
+      {title:'Python for Everyone',author:'Charles Severance',floor:'Floor 2',section:'A',shelf:'Shelf 2'}
+    ];
 
-    let free=0, occ=0, resv=0;
+    function searchBooks(){
+      const q = searchBox.value.toLowerCase();
+      const tbody = document.querySelector("#bookTable tbody");
+      tbody.innerHTML = "";
+      const results = books.filter(b=>b.title.toLowerCase().includes(q)||b.author.toLowerCase().includes(q));
+      if(results.length===0){
+        noRes.style.display="block";
+        return;
+      }
+      noRes.style.display="none";
+      results.forEach(b=>{
+        tbody.innerHTML += `<tr>
+          <td>${b.title}</td>
+          <td>${b.author}</td>
+          <td>${b.floor}</td>
+          <td>${b.section}</td>
+          <td>${b.shelf}</td>
+        </tr>`;
+      });
+    }
+    searchBooks();
 
-    seats.forEach(s=>{
-      const state = (data[s.id] || "free").toLowerCase();
-      const el = document.getElementById(s.id);
-      el.className = "seat " + state;
-
-      if(state==="free") free++;
-      if(state==="occupied") occ++;
-      if(state==="reserved") resv++;
-    });
-
-    document.getElementById("freeCnt").innerText = free;
-    document.getElementById("occCnt").innerText = occ;
-    document.getElementById("resCnt").innerText = resv;
-
-  }catch(e){
-    console.log("Backend not reachable", e);
-  }
-}
-
-setInterval(fetchSeatStatus, 1000);
-fetchSeatStatus();
-
-/* ------------------ BOOK SEARCH ------------------ */
-const books = [
-  {title:"Signals", author:"Oppenheim", floor:"1"},
-  {title:"Digital Electronics", author:"Morris Mano", floor:"1"},
-  {title:"Python", author:"Charles Severance", floor:"2"}
-];
-
-function searchBooks(){
-  const q = document.getElementById("searchBox").value.toLowerCase();
-  const tbody = document.querySelector("#bookTable tbody");
-  tbody.innerHTML = "";
-
-  const results = books.filter(b =>
-    b.title.toLowerCase().includes(q) ||
-    b.author.toLowerCase().includes(q)
-  );
-
-  if(results.length===0){
-    document.getElementById("noRes").style.display="block";
-    return;
-  }
-
-  document.getElementById("noRes").style.display="none";
-
-  results.forEach(b=>{
-    const tr = document.createElement("tr");
-    tr.innerHTML = `<td>${b.title}</td><td>${b.author}</td><td>${b.floor}</td>`;
-    tbody.appendChild(tr);
-  });
-}
-
-searchBooks();
-</script>
+  </script>
 
 </body>
 </html>
