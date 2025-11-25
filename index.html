@@ -247,7 +247,7 @@ async function fetchSeatStatus(){
 /* ---- 1-second EXACT update loop (no browser throttling) ---- */
 async function loopUpdate(){
   await fetchSeatStatus();
-  setTimeout(loopUpdate, 100);  
+  setTimeout(loopUpdate, 200);  
 }
 loopUpdate();
 
