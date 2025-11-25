@@ -244,9 +244,12 @@ async function fetchSeatStatus(){
   }
 }
 
-/* Update every 2 seconds */
-setInterval(fetchSeatStatus, 200);
-fetchSeatStatus();
+/* ---- 1-second EXACT update loop (no browser throttling) ---- */
+async function loopUpdate(){
+  await fetchSeatStatus();
+  setTimeout(loopUpdate, 1000);  
+}
+loopUpdate();
 
 
 /* ---------------- BOOK SEARCH ---------------- */
