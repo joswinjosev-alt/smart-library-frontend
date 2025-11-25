@@ -13,7 +13,7 @@
       --text:#222;
       --seat-size:64px;
       --reserved:#ffddc8;
-      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial;
     }
 
     *{box-sizing:border-box}
@@ -26,8 +26,12 @@
     nav button{
       background:transparent;border:none;
       color:var(--accent);padding:8px 12px;font-weight:600;
+      cursor:pointer;
     }
-    nav button.active{background:var(--accent);color:white;border-radius:8px}
+    nav button.active{
+      background:var(--accent);
+      color:white;border-radius:8px;
+    }
 
     .page-wrap{padding:20px;max-width:1200px;margin:0 auto}
     .page{display:none}
@@ -55,7 +59,6 @@
     .seat.occupied{background:var(--accent);color:white}
     .seat.reserved{background:var(--reserved)}
     .seat.free{background:white}
-
   </style>
 </head>
 
@@ -63,7 +66,7 @@
 
 <header>
   <h2 style="margin-right:auto">Smart Library System</h2>
-  <nav>
+  <nav id="navbar">
     <button id="navHome" class="active">Home</button>
     <button id="navSeat">Seat Map</button>
     <button id="navBooks">Book Locations</button>
@@ -76,7 +79,7 @@
   <section id="home" class="page visible">
     <div class="panel">
       <h2 style="color:var(--accent)">Welcome to Smart Library</h2>
-      <p>This system shows **live seat status** from the ESP32 + backend.</p>
+      <p>This system shows <b>live seat updates</b> from the backend.</p>
     </div>
   </section>
 
@@ -86,7 +89,6 @@
 
       <aside class="panel">
         <h3>Legend & Stats</h3>
-
         <p>Total seats: <b id="totalCnt">8</b></p>
         <p>Free: <b id="freeCnt">0</b></p>
         <p>Occupied: <b id="occCnt">0</b></p>
@@ -106,7 +108,8 @@
     <div class="panel">
       <h2 style="color:var(--accent)">Book Locations</h2>
 
-      <input id="searchBox" placeholder="Search…" oninput="searchBooks()" style="width:100%;padding:10px;margin-bottom:10px"/>
+      <input id="searchBox" placeholder="Search…" oninput="searchBooks()" 
+             style="width:100%;padding:10px;margin-bottom:10px"/>
 
       <table id="bookTable" style="width:100%">
         <thead><tr><th>Title</th><th>Author</th><th>Floor</th></tr></thead>
@@ -123,7 +126,7 @@
   Demo created for Smart Library Project
 </footer>
 
-<!-- ======================= JAVASCRIPT ======================= -->
+<!-- ======================= JAVASCRIPT BELOW ======================= -->
 
 <script>
 /* ------------------ BACKEND URL ------------------ */
@@ -136,19 +139,25 @@ const pages = {
   books: document.getElementById("books")
 };
 
+const navButtons = {
+  home: document.getElementById("navHome"),
+  seat: document.getElementById("navSeat"),
+  books: document.getElementById("navBooks")
+};
+
 function showPage(id){
   Object.values(pages).forEach(p => p.classList.remove("visible"));
   pages[id].classList.add("visible");
 
-  document.querySelectorAll("nav button").forEach(btn=>btn.classList.remove("active"));
-  document.getElementById("nav" + id.charAt(0).toUpperCase()+id.slice(1)).classList.add("active");
+  Object.values(navButtons).forEach(b => b.classList.remove("active"));
+  navButtons[id].classList.add("active");
 }
 
-document.getElementById("navHome").onclick = ()=>showPage("home");
-document.getElementById("navSeat").onclick = ()=>showPage("seat");
-document.getElementById("navBooks").onclick = ()=>showPage("books");
+navButtons.home.onclick = ()=>showPage("home");
+navButtons.seat.onclick = ()=>showPage("seat");
+navButtons.books.onclick = ()=>showPage("books");
 
-/* ------------------ SEATS ------------------ */
+/* ------------------ SEAT RENDER ------------------ */
 const seats = [
   { id:"A1", floor:1 },{ id:"A2", floor:1 },
   { id:"A3", floor:1 },{ id:"A4", floor:1 },
@@ -176,21 +185,19 @@ function renderSeats(){
     });
   });
 }
-
 renderSeats();
 
-/* -------------- LIVE BACKEND SYNC --------------- */
+/* ------------------ LIVE BACKEND FETCH ------------------ */
 async function fetchSeatStatus(){
   try{
-    const res = await fetch(API_URL + "/seats");
-    const data = await res.json();
+    const response = await fetch(API_URL + "/seats");
+    const data = await response.json();
 
     let free=0, occ=0, resv=0;
 
     seats.forEach(s=>{
       const state = (data[s.id] || "free").toLowerCase();
       const el = document.getElementById(s.id);
-
       el.className = "seat " + state;
 
       if(state==="free") free++;
@@ -203,14 +210,14 @@ async function fetchSeatStatus(){
     document.getElementById("resCnt").innerText = resv;
 
   }catch(e){
-    console.log("Backend offline", e);
+    console.log("Backend not reachable", e);
   }
 }
 
 setInterval(fetchSeatStatus, 1000);
 fetchSeatStatus();
 
-/* ------------------ BOOKS ------------------ */
+/* ------------------ BOOK SEARCH ------------------ */
 const books = [
   {title:"Signals", author:"Oppenheim", floor:"1"},
   {title:"Digital Electronics", author:"Morris Mano", floor:"1"},
@@ -222,7 +229,7 @@ function searchBooks(){
   const tbody = document.querySelector("#bookTable tbody");
   tbody.innerHTML = "";
 
-  const results = books.filter(b => 
+  const results = books.filter(b =>
     b.title.toLowerCase().includes(q) ||
     b.author.toLowerCase().includes(q)
   );
@@ -231,6 +238,7 @@ function searchBooks(){
     document.getElementById("noRes").style.display="block";
     return;
   }
+
   document.getElementById("noRes").style.display="none";
 
   results.forEach(b=>{
